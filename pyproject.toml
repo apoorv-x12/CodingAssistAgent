@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "codingassistagent"
+version = "0.0.0"
+description = "Minimal pyproject for CodingAssistAgent workspace"
+requires-python = ">=3.8"
+dependencies = [
+    "fastapi>=0.124.2",
+    "groq",
+    "python-dotenv",
+    "uvicorn>=0.33.0",
+]
