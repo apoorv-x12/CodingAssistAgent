@@ -9,9 +9,9 @@ llama-3.1-8b-instant	Fastest + very cheap
 mixtral-8x7b	Good balanced model
 '''
 @app.get("/chat")
-def chat(q: str):
+def chat(q: str,working_directory: str="calculator"):
     
-    resp=run_agent(q)
+    resp=run_agent(q, working_directory)
     return {"reply": resp}
 
 

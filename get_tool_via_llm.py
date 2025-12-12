@@ -9,7 +9,7 @@ client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 def ask_llm(messages):
     resp = client.chat.completions.create(
-        model="llama-3.1-8b-instant",
+        model="llama-3.1-70b-versatile",
         messages=messages,
     )
     return resp.choices[0].message.content

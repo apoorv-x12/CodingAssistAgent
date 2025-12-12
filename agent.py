@@ -10,11 +10,11 @@ client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 MAX_STEPS = 20
 
-def run_agent(user_input):
+def run_agent(user_input, working_directory="."):
 
     messages = [
         {"role": "system", "content": system_prompt},
-        {"role": "user", "content": user_input},
+        {"role": "user", "content": f"Working directory: {working_directory}\n\n{user_input}"},
     ]
 
     for step in range(MAX_STEPS):
@@ -35,7 +35,7 @@ def run_agent(user_input):
             return
         
         # 4. Execute tool
-        result = call_tool(tool_name, args)
+        result = call_tool(tool_name, args, working_directory)
 
         # 5. Add tool call + tool result to conversation
         messages.append({"role": "assistant", "content": llm_output})
