@@ -1,6 +1,7 @@
 from groq import Groq
 from dotenv import load_dotenv
 from fastapi import FastAPI
+from prompts import system_prompt
 import os
 
 app=FastAPI()
@@ -17,7 +18,10 @@ mixtral-8x7b	Good balanced model
 def chat(q: str):
     resp = client.chat.completions.create(
         model="llama-3.1-8b-instant",
-        messages=[{"role": "user", "content": q}]
+        messages=[
+           # {"role": "system", "content": system_prompt},
+            {"role": "user", "content": q}
+            ]
     )
     return {"reply": resp.choices[0].message.content}
 
