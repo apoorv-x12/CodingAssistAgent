@@ -20,14 +20,18 @@ def parse_tool_call(text):
         data = json.loads(text)
         return data.get("tool"), data.get("args", {})
     except json.JSONDecodeError:
-        # LLM didn't return JSON — treat the full text as the final assistant response
-        # Returning ("none", {}) makes run_agent() return the LLM text to the user.
-        return "none", {}
-    
+        return None, {}
 
 
-def call_tool(tool_name, args, working_directory="calculator"):
+def call_tool(tool_name, args, working_directory="calculator", intent="unknown"):
     if tool_name not in TOOLS:
         return f"Error: Unknown tool '{tool_name}'"
+    
+    # Restrict tools by intent
+    if intent == "code_read" and tool_name in ["replace_in_file", "write_file"]:
+        return f"Error: Tool '{tool_name}' not allowed for read-only intent"
+    if intent == "code_edit" and tool_name == "run_python_file":
+        return f"Error: Tool '{tool_name}' not allowed for edit intent"
+    
     fn = TOOLS[tool_name]
     return fn(working_directory, **args)

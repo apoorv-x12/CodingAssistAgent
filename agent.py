@@ -1,46 +1,57 @@
 from get_tool_via_llm import ask_llm, call_tool, parse_tool_call
 from prompts import system_prompt
-from groq import Groq
+from toolkit import get_file_content
 import os
 import json
 from dotenv import load_dotenv
 load_dotenv()
 
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 MAX_STEPS = 20
 
-def run_agent(user_input, working_directory="."):
+def classify_intent(user_input: str) -> str:
+    text = user_input.lower()
+
+    if any(k in text for k in ["update", "change", "modify", "fix", "refactor"]):
+        return "code_edit"
+
+    if any(k in text for k in ["explain", "how", "what does", "describe"]):
+        return "code_read"
+
+    return "unknown"
+
+def run_agent(user_input, working_directory="calculator"):
+    intent = classify_intent(user_input)
 
     messages = [
         {"role": "system", "content": system_prompt},
-        {"role": "user", "content": f"Working directory: {working_directory}\n\n{user_input}"},
+        {"role": "user", "content": user_input},
     ]
 
-    for step in range(MAX_STEPS):
+    # Controller-forced exploration
+    TARGET_FILES = ["pkg/calculator.py", "main.py"]
+    if intent in ("code_edit", "code_read"):
+        for file in TARGET_FILES:
+            content = get_file_content(working_directory, file)
+            messages.append({"role": "tool", "content": f"{file}\n{content}"})
 
-        # 1. Ask LLM
+    for step in range(3):  # small, deterministic
         llm_output = ask_llm(messages)
 
-        # 2. Parse tool call
         tool_name, args = parse_tool_call(llm_output)
 
-        # 3. LLM says it's done
-        if tool_name == "none" :
-            print("Final response:\n" + llm_output)
-            return f"Final response:\n{llm_output}"
-        
         if tool_name is None:
-            print("Error: Could not parse tool call from LLM output.")
-            return
-        
-        # 4. Execute tool
-        result = call_tool(tool_name, args, working_directory)
+            continue
 
-        # 5. Add tool call + tool result to conversation
+        if tool_name == "none":
+            return llm_output
+
+        result = call_tool(tool_name, args, working_directory, intent)
+
         messages.append({"role": "assistant", "content": llm_output})
-        # Groq chat API requires a `tool_call_id` property on messages with role 'tool'
-        # Use the tool name as the tool_call_id so the model can correlate the tool result.
         messages.append({"role": "tool", "content": result, "tool_call_id": tool_name})
 
-    print("Stopped: exceeded max agent steps.")
+        if intent == "code_edit":
+            return
+
+    return "Agent stopped after 3 steps."
